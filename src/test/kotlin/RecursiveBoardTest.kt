@@ -34,15 +34,18 @@ class RecursiveBoardTest {
 
     }
 
+
     @Test
-    fun `hard level 2 should pass`() {
+    fun `expert level should pass`() {
 
         val game = Game()
-        game.prepare(hardLevel2())
+        game.prepare(expertLevel())
+        game.board.debug()
         game.solve()
 
         val solvedBoard = game.board
 
+        solvedBoard.debug()
         assertThat(solvedBoard.isCompletelySolved()).isTrue()
         assertThat(solvedBoard.nbFoundCells()).isEqualTo(81)
 

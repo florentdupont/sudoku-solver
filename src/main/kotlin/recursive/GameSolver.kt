@@ -1,6 +1,5 @@
 package recursive
 
-import common.ImpossibleGame
 import java.util.NoSuchElementException
 
 
@@ -13,14 +12,15 @@ class GameSolver(boardToSolve: Board) : CellListener {
     }
 
 
-
-
-
-
-
-    // TODO devra surement être réintégré sur le reste ...
+    /**
+     * La 1ere passe itère sur toutes les cellules trouvée et les "reveille"
+     * pour qu'elles notifient à leur tour leur formes parentes...
+     * Les formes parentes vont réduire les valeurs possibles des leurs cases.
+     * Ce qui pourra avoir comme conséquences de réduire à 1 seule valeur possible sur une case
+     * => et de faire en sorte qu'une seule valeur unique deviennent la valeur trouvée.
+     * et a son tour déclenche les formes parentes pour qu'elles se mettent à jour.
+     */
     fun firstPass() {
-
         board.cells.forEach { cell ->
             if (cell.isFound) {
                 cell.notifyValueWasFound()
@@ -29,7 +29,7 @@ class GameSolver(boardToSolve: Board) : CellListener {
 
     }
 
-    fun tryHarder() {
+    fun secondPass() {
 
         val maxIteration = 12
 
@@ -39,6 +39,10 @@ class GameSolver(boardToSolve: Board) : CellListener {
 
             board.shapes().forEach { shape ->
                 val nbFound = tryToFindUnicityInShape(shape)
+                // des valeurs ont pu être positionnées sur des cellules
+                // Mais elles n'ont pas relancée de mise à jour des shapes parentes
+                // On relance donc une firstPass pour qu'elles soient remises à jour.
+                firstPass()
                 nbFoundInThisIteration += nbFound
                 if (nbFound > 0)
                     println("$nbFound cell(s) found in $shape")
@@ -102,7 +106,9 @@ class GameSolver(boardToSolve: Board) : CellListener {
                 val foundValue = occ.key
                 // TODO ATTENTION l'affectation ici a pu changer le contenu de la mapOccurence
                 // qui n'est peut-être plus à jour !
-                foundCell.foundValue = foundValue
+                // peut être qu'il ne faut que positionner la valeur ici, mais ne PAS notifier les cellules parentes.
+               // foundCell.foundValue = foundValue
+                foundCell.setFoundValueWithNoPropagation(foundValue)
             }
         }
         return nbFoundCells

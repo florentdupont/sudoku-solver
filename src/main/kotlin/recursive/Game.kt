@@ -6,7 +6,7 @@ class Game {
 
     lateinit var board:Board
 
-    fun prepare(content:String): Board {
+    fun prepare(content:String) {
         val cells = arrayListOf<Cell>()
         var linearPosition = 0
         val authorizedChars = (1..9).map { it.digitToChar() } + ' '
@@ -17,19 +17,17 @@ class Game {
                 linearPosition++
             }
         }
-       return Board(cells)
+       board = Board(cells)
     }
 
     fun solve() {
-
-        val board = prepare(mediumLevel())
 
         val initialSolver = GameSolver(board)
 
         initialSolver.firstPass()
 
-        if(!board.isCompletelySolved()) {
-            initialSolver.tryHarder()
+        if(!initialSolver.board.isCompletelySolved()) {
+            initialSolver.secondPass()
         }
 
         var finallySolvedSolver: GameSolver = initialSolver
@@ -77,7 +75,7 @@ class Game {
         cellToAlternate.foundValue = alternativeValue
 
         alternativeSolver.firstPass()
-        alternativeSolver.tryHarder()
+        alternativeSolver.secondPass()
 
         // faire un try harder ?
         return alternativeSolver

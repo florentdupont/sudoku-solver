@@ -45,7 +45,6 @@ class Cell(val x:Int, val y:Int, initialValue:Int?) {
         if(isFound)
             return
         if(_possibleValues.contains(value)) {
-            //println("Cell $x,$y removing possible value $value")
             _possibleValues.remove(value)
             if (_possibleValues.size == 1) {
                 println("Only 1 possible value left : ${_possibleValues[0]} is found for cell $x,$y")
@@ -87,6 +86,15 @@ class Cell(val x:Int, val y:Int, initialValue:Int?) {
                 notifyValueWasFound()
             }
         }
+
+    fun setFoundValueWithNoPropagation(value:Int) {
+        if (isFound) {
+            throw ImpossibleGame("Impossible d'affecter une valeur déjà positionnée")
+        } else {
+            _foundValue = value
+            _possibleValues.clear()
+        }
+    }
 
     fun clone(): Cell {
         val clonedCell = Cell(x, y, foundValue)
