@@ -10,9 +10,9 @@ class RecursiveBoardTest {
 
         val game = Game()
         game.prepare(mediumLevel())
-        game.solve()
 
-        val solvedBoard = game.board
+
+        val solvedBoard = game.solve()
 
         assertThat(solvedBoard.isCompletelySolved()).isTrue()
         assertThat(solvedBoard.nbFoundCells()).isEqualTo(81)
@@ -25,10 +25,9 @@ class RecursiveBoardTest {
 
         val game = Game()
         game.prepare(hardLevel())
-        game.solve()
+        val solvedBoard = game.solve()
 
-        val solvedBoard = game.board
-
+        solvedBoard.debug()
         assertThat(solvedBoard.isCompletelySolved()).isTrue()
         assertThat(solvedBoard.nbFoundCells()).isEqualTo(81)
 
@@ -40,10 +39,9 @@ class RecursiveBoardTest {
 
         val game = Game()
         game.prepare(expertLevel())
-        game.board.debug()
-        game.solve()
+        game.initialBoard.debug()
 
-        val solvedBoard = game.board
+        val solvedBoard = game.solve()
 
         solvedBoard.debug()
         assertThat(solvedBoard.isCompletelySolved()).isTrue()
@@ -51,6 +49,20 @@ class RecursiveBoardTest {
 
     }
 
+    @Test
+    fun `diabolical level should pass`() {
+
+        val game = Game()
+        game.prepare(diabolicalLevel())
+        game.initialBoard.debug()
+
+        val solvedBoard = game.solve()
+
+        solvedBoard.debug()
+        assertThat(solvedBoard.isCompletelySolved()).isTrue()
+        assertThat(solvedBoard.nbFoundCells()).isEqualTo(81)
+
+    }
 
 
     fun mediumLevel() : String {
@@ -121,5 +133,19 @@ class RecursiveBoardTest {
                 "   |   | 4 " +
                 "  5|2 8|   " +
                 "  2| 9 | 7 "
+    }
+
+    fun diabolicalLevel() : String {
+        return  "  4| 7 |   " +
+                "2  |   |  3" +
+                " 9 |8 4| 5 " +
+                // "-----------\n" +
+                "  9|   |4  " +
+                "   |  1|   " +
+                " 4 |6 5| 8 " +
+                //  "-----------\n" +
+                "   | 9 | 7 " +
+                "  3|7 6|  5" +
+                " 6 | 1 |   "
     }
 }

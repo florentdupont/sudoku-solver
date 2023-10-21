@@ -15,6 +15,10 @@ abstract class Shape(var name:String, var cells:Array<Cell>): Iterable<Cell>, Ce
         return this.javaClass.simpleName
     }
 
+    override fun toString(): String {
+        return "${type()} $name"
+    }
+
     override fun valueFound(cell: Cell, newValue: Int) {
         // quand une veleur est trouvée, alors, on l'enleve de toutes les cellules des Shapes
         cells.forEach { cellInShape ->

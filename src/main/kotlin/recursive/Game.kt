@@ -1,10 +1,15 @@
 package recursive
 
 import common.ImpossibleGame
+import java.util.LinkedList
+import java.util.Queue
 
 class Game {
 
-    lateinit var board:Board
+    var possibleAlterableBoards:Queue<Board> = LinkedList()
+
+    lateinit var initialBoard:Board
+    //var solvedBoar:Board? = null
 
     fun prepare(content:String) {
         val cells = arrayListOf<Cell>()
@@ -17,12 +22,14 @@ class Game {
                 linearPosition++
             }
         }
-       board = Board(cells)
+       initialBoard = Board(cells)
     }
 
-    fun solve() {
+    fun solve():Board {
 
-        val initialSolver = GameSolver(board)
+        lateinit var result: Board
+
+        val initialSolver = GameSolver(initialBoard)
 
         initialSolver.firstPass()
 
@@ -30,55 +37,74 @@ class Game {
             initialSolver.secondPass()
         }
 
-        var finallySolvedSolver: GameSolver = initialSolver
-        var continueSolving = !finallySolvedSolver.board.isCompletelySolved()
+        if(!initialSolver.board.isCompletelySolved()) {
+            possibleAlterableBoards.add(initialSolver.board)
+        }
+
+
+        var maxIteration = 5
+        var isSolved = false
 
         try {
 
-            while(continueSolving) {
+            while(possibleAlterableBoards.isNotEmpty() && maxIteration > 0 && !isSolved) {
 
-                // find the first
-                val firstCellWithFewPossibility = finallySolvedSolver.board.findFirstCellWithLessValuePossibilities()
-                println("$firstCellWithFewPossibility : ${firstCellWithFewPossibility.possibleValues}")
+                val alternativeBoard = possibleAlterableBoards.poll()
+
+                println("Le plateau n'est toujours pas résolu")
+
+                val firstCellWithFewPossibility = alternativeBoard.findFirstCellWithLessValuePossibilities()
+                println("plusieurs alternatives sont possible")
+                println("cell ${firstCellWithFewPossibility.x},${firstCellWithFewPossibility.y} : ${firstCellWithFewPossibility.possibleValues}")
 
                 val alternativeValues = ArrayList(firstCellWithFewPossibility.possibleValues)
-
                 for (alternativeValue in alternativeValues) {
                     try {
-                        finallySolvedSolver = testAlternative(finallySolvedSolver.board, firstCellWithFewPossibility, alternativeValue)
-                        if(finallySolvedSolver.board.isCompletelySolved())
+                        val alternatedBoard = testAlternative(alternativeBoard, firstCellWithFewPossibility, alternativeValue)
+                        if(alternatedBoard.isCompletelySolved()) {
+                            // si le board est completé, alors, le jeu est fini.
+                            result = alternatedBoard
+                            isSolved = true
                             break
+                        }
+
+                        // a la fin de la tentative de résolution alternative, il est possible que le tableau ne soit toujours pas résolu.
+                        // il faut donc tenter une nouvelle alternative sur le tableau restant.
+                        possibleAlterableBoards.add(alternatedBoard)
+
                     } catch (error: ImpossibleGame) {
                         error.printStackTrace()
                         println("Cette alternative n'est pas possible ... ")
+
                     }
                 }
 
-                continueSolving = !finallySolvedSolver.board.isCompletelySolved()
-
+                maxIteration--
             }
         } catch (e:Exception) {
             e.printStackTrace()
             println("DEBUGGING")
-            finallySolvedSolver.board.debug()
         }
 
-        this.board = finallySolvedSolver.board
+       return result
+
     }
 
 
-    fun testAlternative(initialBoard: Board, cellAlternative: Cell, alternativeValue: Int ): GameSolver {
+    fun testAlternative(initialBoard: Board, cellAlternative: Cell, alternativeValue: Int ): Board {
+        println("Testing alternative on Board")
+        initialBoard.debug()
         println("trying with alternative $alternativeValue for cell ${cellAlternative.x}, ${cellAlternative.y}")
 
         val alternativeSolver = GameSolver(initialBoard)
         val cellToAlternate = alternativeSolver.board[cellAlternative.x, cellAlternative.y]
         cellToAlternate.foundValue = alternativeValue
+        alternativeSolver.eventCellWasFound(cellToAlternate)
 
         alternativeSolver.firstPass()
         alternativeSolver.secondPass()
 
-        // faire un try harder ?
-        return alternativeSolver
+        return alternativeSolver.board
     }
 
 

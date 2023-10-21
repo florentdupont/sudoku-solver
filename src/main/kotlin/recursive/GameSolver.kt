@@ -1,14 +1,26 @@
 package recursive
 
-import java.util.NoSuchElementException
+import java.util.*
 
 
 class GameSolver(boardToSolve: Board) : CellListener {
+
+
+    var nextCellsToNotifyParentsShapes:Queue<Cell> = LinkedList()
 
     var board: Board
 
     init {
         board = boardToSolve.clone()
+        board.cells.forEach { it.parentSolver = this }
+
+        // on empile chaque cellule qui est déjà trouvée dans la file de traitement
+        board.cells.forEach { cell ->
+            if (cell.isFound) {
+                // cell.notifyValueWasFound()
+                nextCellsToNotifyParentsShapes.add(cell)
+            }
+        }
     }
 
 
@@ -21,45 +33,40 @@ class GameSolver(boardToSolve: Board) : CellListener {
      * et a son tour déclenche les formes parentes pour qu'elles se mettent à jour.
      */
     fun firstPass() {
-        board.cells.forEach { cell ->
-            if (cell.isFound) {
-                cell.notifyValueWasFound()
-            }
+        // Dépile la liste de traitement des cellules trouvées
+        while (!nextCellsToNotifyParentsShapes.isEmpty()) {
+            val cell= nextCellsToNotifyParentsShapes.poll() // Récupère et supprime le premier élément
+            // force la cellule a notifier les shapes parents
+            cell.notifyParentShapesValueWasFound()
         }
-
     }
 
+
+    fun eventCellWasFound(cell: Cell) {
+        nextCellsToNotifyParentsShapes.add(cell)
+    }
+
+    /**
+     * La seconde passe recherche non plus par cellule, mais par Shape.
+     * S'il n'existe plus qu'une seule valeur possible pour une Shape, alors
+     * il faudra affecter la case dessus.
+     */
     fun secondPass() {
 
-        val maxIteration = 12
+        board.shapes().forEach { shape ->
+            val nbFound = tryToFindUnicityInShape(shape)
 
-        // run the game
-        for(iteration in 0..<maxIteration) {
-            var nbFoundInThisIteration = 0
-
-            board.shapes().forEach { shape ->
-                val nbFound = tryToFindUnicityInShape(shape)
-                // des valeurs ont pu être positionnées sur des cellules
-                // Mais elles n'ont pas relancée de mise à jour des shapes parentes
-                // On relance donc une firstPass pour qu'elles soient remises à jour.
-                firstPass()
-                nbFoundInThisIteration += nbFound
-                if (nbFound > 0)
-                    println("$nbFound cell(s) found in $shape")
-            }
-
-            if(nbFoundInThisIteration == 0) {
-                println("Breaking loop because no new solution can be found")
-                break
-            }
+            // des valeurs ont pu être positionnées sur des cellules
+            // Mais elles n'ont pas relancée de mise à jour des shapes parentes
+            // On relance donc une firstPass pour qu'elles soient remises à jour.
+            // avant de relancer une recherhe d'unicité sur une prochaine
+            firstPass()
         }
-
-        println("Found Cells : ${board.nbFoundCells()}")
-        println("no more cells can be found")
 
     }
 
     private fun tryToFindUnicityInShape(shape: Shape):Int {
+        println("Try to find unicity in ${shape.type()} ${shape.name}")
 
         var nbFoundCells = 0
 
@@ -94,7 +101,7 @@ class GameSolver(boardToSolve: Board) : CellListener {
                     foundCell = shape.cells.first { it.possibleValues.contains(occ.key) }
                 } catch (e:NoSuchElementException) {
                     e.printStackTrace()
-                    // println(shape.cells.)
+
                     shape.cells.forEach {
                         println("$it : ${it.possibleValues}")
                     }
@@ -104,11 +111,9 @@ class GameSolver(boardToSolve: Board) : CellListener {
 
                 nbFoundCells++
                 val foundValue = occ.key
-                // TODO ATTENTION l'affectation ici a pu changer le contenu de la mapOccurence
-                // qui n'est peut-être plus à jour !
-                // peut être qu'il ne faut que positionner la valeur ici, mais ne PAS notifier les cellules parentes.
-               // foundCell.foundValue = foundValue
+
                 foundCell.setFoundValueWithNoPropagation(foundValue)
+                eventCellWasFound(foundCell)
             }
         }
         return nbFoundCells

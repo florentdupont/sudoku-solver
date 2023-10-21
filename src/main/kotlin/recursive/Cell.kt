@@ -21,6 +21,7 @@ class Cell(val x:Int, val y:Int, initialValue:Int?) {
     // mais que la cellule "notifie" qu'une solution a été trouvée
    // private var _cellListeners = arrayListOf<CellListener>()
     var parentShapes = arrayListOf<Shape>()
+    lateinit var parentSolver:GameSolver
     private var _foundValue:Int? = null
     private var _possibleValues = ArrayList<Int>( (1..9).toList())
 
@@ -58,14 +59,18 @@ class Cell(val x:Int, val y:Int, initialValue:Int?) {
                     }
                 }
 
-                foundValue = _possibleValues[0]
+                //foundValue = _possibleValues[0]
+                setFoundValueWithNoPropagation(_possibleValues[0])
+                // ajoute dans la liste des items
+                parentSolver.eventCellWasFound(this)
 
             }
         }
     }
 
 
-    fun notifyValueWasFound() {
+    // TODO, peut-être que ça pourrait être remonté dans le gameSolver...
+    fun notifyParentShapesValueWasFound() {
         parentShapes.forEach { parentShape ->
             val newValue = requireNotNull(foundValue)
             parentShape.valueFound(this, newValue)
@@ -83,7 +88,7 @@ class Cell(val x:Int, val y:Int, initialValue:Int?) {
             } else {
                 _foundValue = value
                 _possibleValues.clear()
-                notifyValueWasFound()
+                //notifyParentShapesValueWasFound()
             }
         }
 

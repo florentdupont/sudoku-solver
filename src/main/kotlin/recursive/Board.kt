@@ -43,7 +43,6 @@ class Board(var cells: List<Cell>) {
 
     fun clone(): Board {
         val clonedCells = cells.map { it.clone() }
-
         return Board(clonedCells)
     }
 
