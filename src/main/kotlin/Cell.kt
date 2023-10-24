@@ -1,7 +1,3 @@
-package recursive
-
-import common.ImpossibleGame
-
 class Cell(val x:Int, val y:Int, initialValue:Int?) {
 
     companion object {
@@ -19,9 +15,8 @@ class Cell(val x:Int, val y:Int, initialValue:Int?) {
 
     // en vrai, il serait plus logique que ce ne soit pas la cellule qui connaisse les autres shapes parentes
     // mais que la cellule "notifie" qu'une solution a été trouvée
-   // private var _cellListeners = arrayListOf<CellListener>()
     var parentShapes = arrayListOf<Shape>()
-    lateinit var parentSolver:GameSolver
+    lateinit var parentSolver: GameSolver
     private var _foundValue:Int? = null
     private var _possibleValues = ArrayList<Int>( (1..9).toList())
 
@@ -50,16 +45,6 @@ class Cell(val x:Int, val y:Int, initialValue:Int?) {
             if (_possibleValues.size == 1) {
                 println("Only 1 possible value left : ${_possibleValues[0]} is found for cell $x,$y")
 
-                // Sécurité : pour corriger un bug.
-                parentShapes.forEach { shape ->
-                    val valuesAlreadyFoundInShape = shape.cells.filter { it.isFound }.map { it.foundValue!! }
-                    if(_possibleValues[0] in valuesAlreadyFoundInShape) {
-                        throw ImpossibleGame("Impossible de placer la valeur ${_possibleValues[0]} sur la cell $x,$y. " +
-                                "car la valeur existe dejà sur ${shape.type()} ${shape.name}")
-                    }
-                }
-
-                //foundValue = _possibleValues[0]
                 setFoundValueWithNoPropagation(_possibleValues[0])
                 // ajoute dans la liste des items
                 parentSolver.eventCellWasFound(this)
@@ -84,7 +69,7 @@ class Cell(val x:Int, val y:Int, initialValue:Int?) {
         get() = _foundValue
         set(value) {
             if (isFound) {
-                throw ImpossibleGame("Impossible d'affecter une valeur déjà positionnée")
+                throw IllegalMove("Impossible d'affecter une valeur déjà positionnée")
             } else {
                 _foundValue = value
                 _possibleValues.clear()
@@ -94,7 +79,7 @@ class Cell(val x:Int, val y:Int, initialValue:Int?) {
 
     fun setFoundValueWithNoPropagation(value:Int) {
         if (isFound) {
-            throw ImpossibleGame("Impossible d'affecter une valeur déjà positionnée")
+            throw IllegalMove("Impossible d'affecter une valeur déjà positionnée")
         } else {
             _foundValue = value
             _possibleValues.clear()

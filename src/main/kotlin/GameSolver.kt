@@ -1,10 +1,9 @@
-package recursive
-
+import utils.ColoredConsole
+import utils.println
 import java.util.*
 
 
 class GameSolver(boardToSolve: Board) : CellListener {
-
 
     var nextCellsToNotifyParentsShapes:Queue<Cell> = LinkedList()
 
@@ -14,10 +13,9 @@ class GameSolver(boardToSolve: Board) : CellListener {
         board = boardToSolve.clone()
         board.cells.forEach { it.parentSolver = this }
 
-        // on empile chaque cellule qui est déjà trouvée dans la file de traitement
+        // Empile chaque cellule qui est déjà trouvée dans la file de traitement
         board.cells.forEach { cell ->
             if (cell.isFound) {
-                // cell.notifyValueWasFound()
                 nextCellsToNotifyParentsShapes.add(cell)
             }
         }
@@ -52,9 +50,9 @@ class GameSolver(boardToSolve: Board) : CellListener {
      * il faudra affecter la case dessus.
      */
     fun secondPass() {
-
+       // board.debug()
         board.shapes().forEach { shape ->
-            val nbFound = tryToFindUnicityInShape(shape)
+            tryToFindUnicityInShape(shape)
 
             // des valeurs ont pu être positionnées sur des cellules
             // Mais elles n'ont pas relancée de mise à jour des shapes parentes
@@ -80,6 +78,16 @@ class GameSolver(boardToSolve: Board) : CellListener {
         //   4 : 3
 
         val occurencesByRemainingValue = hashMapOf<Int,Int>()
+
+        // les boards alternatifs peuvent amener à des situations impossible.
+        if(shape.cells.filter { !it.isFound }.size == 1) {
+            val lastNotFoundCellInShape = shape.cells.first { !it.isFound }
+            if(lastNotFoundCellInShape.possibleValues.size > 1)
+                throw ImpossibleBoardState("La cell $lastNotFoundCellInShape ne peut pas encore avoir plusieurs " +
+                        "solutions ${lastNotFoundCellInShape.possibleValues} car c'est normalement la " +
+                        "dernière cellule non trouvée du Board")
+        }
+
         shape.cells.filter { !it.isFound }.forEach{ cell ->
             cell.possibleValues.forEach { value ->
                 if(occurencesByRemainingValue.containsKey(value)) {
@@ -93,28 +101,13 @@ class GameSolver(boardToSolve: Board) : CellListener {
        // 2eme étape, on ne garde que les entrées qui ont 1 seule valeur possible, c'est à dire
        // qui sont de la forme {x->1}
        // ces valeurs, si elles sont uniques, ne peuvent être positionnées qu'à 1 seul endroit.
-       // il suffit donc de placer cette valeur sur la seul case de la cellule qui est possible.
-        occurencesByRemainingValue.entries.forEach { occ->
-            if(occ.value == 1) {
-                var foundCell:Cell
-                try {
-                    foundCell = shape.cells.first { it.possibleValues.contains(occ.key) }
-                } catch (e:NoSuchElementException) {
-                    e.printStackTrace()
-
-                    shape.cells.forEach {
-                        println("$it : ${it.possibleValues}")
-                    }
-                    println("trying to find ${occ.key}")
-                    throw  e
-                }
-
-                nbFoundCells++
-                val foundValue = occ.key
-
-                foundCell.setFoundValueWithNoPropagation(foundValue)
-                eventCellWasFound(foundCell)
-            }
+       // il suffit donc de placer cette valeur sur la seule case de la cellule qui est possible.
+        occurencesByRemainingValue.entries.filter { it.value == 1 }.forEach { occ->
+            var foundCell = shape.cells.first { it.possibleValues.contains(occ.key) }
+            nbFoundCells++
+            val foundValue = occ.key
+            foundCell.setFoundValueWithNoPropagation(foundValue)
+            eventCellWasFound(foundCell)
         }
         return nbFoundCells
     }

@@ -1,11 +1,8 @@
-package recursive
-
 abstract class Shape(var name:String, var cells:Array<Cell>): Iterable<Cell>, CellListener {
 
     init {
         cells.forEach { it.addParentShape(this) }
     }
-
 
     override fun iterator(): Iterator<Cell> {
         return cells.iterator()
@@ -20,9 +17,8 @@ abstract class Shape(var name:String, var cells:Array<Cell>): Iterable<Cell>, Ce
     }
 
     override fun valueFound(cell: Cell, newValue: Int) {
-        // quand une veleur est trouvée, alors, on l'enleve de toutes les cellules des Shapes
+        // quand une valeur est trouvée, alors, on l'enlève de toutes les cellules des Shapes
         cells.forEach { cellInShape ->
-           // val valueToRemove = requireNotNull()
             cellInShape.removeImpossibleValue(newValue)
         }
     }
@@ -30,7 +26,7 @@ abstract class Shape(var name:String, var cells:Array<Cell>): Iterable<Cell>, Ce
 
     fun debug() {
         cells.forEach {
-            println("${it} -- ${it.possibleValues}")
+            println("$it -- ${it.possibleValues}")
         }
         println()
     }

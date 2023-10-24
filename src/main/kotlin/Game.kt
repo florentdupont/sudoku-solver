@@ -1,6 +1,3 @@
-package recursive
-
-import common.ImpossibleGame
 import java.util.LinkedList
 import java.util.Queue
 
@@ -8,8 +5,7 @@ class Game {
 
     var possibleAlterableBoards:Queue<Board> = LinkedList()
 
-    lateinit var initialBoard:Board
-    //var solvedBoar:Board? = null
+    lateinit var initialBoard: Board
 
     fun prepare(content:String) {
         val cells = arrayListOf<Cell>()
@@ -25,7 +21,7 @@ class Game {
        initialBoard = Board(cells)
     }
 
-    fun solve():Board {
+    fun solve(): Board {
 
         lateinit var result: Board
 
@@ -39,10 +35,12 @@ class Game {
 
         if(!initialSolver.board.isCompletelySolved()) {
             possibleAlterableBoards.add(initialSolver.board)
+        } else {
+            result = initialSolver.board
         }
 
 
-        var maxIteration = 5
+        var maxIteration = 10
         var isSolved = false
 
         try {
@@ -72,7 +70,8 @@ class Game {
                         // il faut donc tenter une nouvelle alternative sur le tableau restant.
                         possibleAlterableBoards.add(alternatedBoard)
 
-                    } catch (error: ImpossibleGame) {
+                    } catch (error: Exception) {
+                        // IllegalMove or ImpossobleBoardState
                         error.printStackTrace()
                         println("Cette alternative n'est pas possible ... ")
 

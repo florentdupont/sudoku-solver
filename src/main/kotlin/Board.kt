@@ -1,4 +1,4 @@
-package recursive
+import utils.print
 
 class Board(var cells: List<Cell>) {
 
@@ -77,7 +77,7 @@ class Board(var cells: List<Cell>) {
                 }
                 val cell = get(x, y)
                 if(lastFoundCell == cell) {
-                    print(green("" + cell))
+                    print{ "$cell".green }
                 } else {
                     print(cell)
                 }
@@ -95,10 +95,4 @@ class Board(var cells: List<Cell>) {
     }
 
 
-}
-
-fun green(text:String): String {
-    val greenColor = "\u001b[32m"
-    val reset = "\u001b[0m"
-    return "${greenColor}$text$reset"
 }
