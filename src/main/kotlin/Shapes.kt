@@ -1,34 +1,18 @@
-abstract class Shape(var name:String, var cells:Array<Cell>): Iterable<Cell>, CellListener {
+abstract class Shape(var name:String, var cells:Array<Cell>) {
 
     init {
         cells.forEach { it.addParentShape(this) }
-    }
-
-    override fun iterator(): Iterator<Cell> {
-        return cells.iterator()
     }
 
     fun type(): String {
         return this.javaClass.simpleName
     }
 
-    override fun toString(): String {
-        return "${type()} $name"
-    }
-
-    override fun valueFound(cell: Cell, newValue: Int) {
-        // quand une valeur est trouvée, alors, on l'enlève de toutes les cellules des Shapes
+    fun removeFromPossibleValuesInShape(newlyFoundValue: Int) {
+        // quand une valeur est trouvée, alors, elle est enlevée de toutes les cellules de la forme courant
         cells.forEach { cellInShape ->
-            cellInShape.removeImpossibleValue(newValue)
+            cellInShape.removeImpossibleValue(newlyFoundValue)
         }
-    }
-
-
-    fun debug() {
-        cells.forEach {
-            println("$it -- ${it.possibleValues}")
-        }
-        println()
     }
 }
 

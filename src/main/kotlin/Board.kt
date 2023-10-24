@@ -5,8 +5,6 @@ class Board(var cells: List<Cell>) {
     var lines = arrayListOf<Line>()
     var cols = arrayListOf<Col>()
     var squares = arrayListOf<Square>()
-    var lastFoundCell: Cell? = null
-    var DEBUG = false
 
     init {
         init()
@@ -50,8 +48,6 @@ class Board(var cells: List<Cell>) {
         return nbFoundCells() == 81
     }
 
-
-
     fun nbFoundCells():Int {
         return cells.filter { it.foundValue != null }.size
     }
@@ -76,12 +72,7 @@ class Board(var cells: List<Cell>) {
                     print("|")
                 }
                 val cell = get(x, y)
-                if(lastFoundCell == cell) {
-                    print{ "$cell".green }
-                } else {
-                    print(cell)
-                }
-
+                print{ "$cell".bright }
             }
             println("|")
         }
@@ -89,9 +80,7 @@ class Board(var cells: List<Cell>) {
     }
 
     fun findFirstCellWithLessValuePossibilities(): Cell {
-
         return cells.filter { !it.isFound }.minBy { it.possibleValues.size }
-
     }
 
 

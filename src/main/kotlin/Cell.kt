@@ -1,3 +1,5 @@
+import exceptions.IllegalMove
+
 class Cell(val x:Int, val y:Int, initialValue:Int?) {
 
     companion object {
@@ -13,10 +15,8 @@ class Cell(val x:Int, val y:Int, initialValue:Int?) {
         }
     }
 
-    // en vrai, il serait plus logique que ce ne soit pas la cellule qui connaisse les autres shapes parentes
-    // mais que la cellule "notifie" qu'une solution a été trouvée
-    var parentShapes = arrayListOf<Shape>()
-    lateinit var parentSolver: GameSolver
+    var owningShapes = arrayListOf<Shape>()
+    lateinit var owningSolver: GameSolver
     private var _foundValue:Int? = null
     private var _possibleValues = ArrayList<Int>( (1..9).toList())
 
@@ -33,9 +33,8 @@ class Cell(val x:Int, val y:Int, initialValue:Int?) {
         }
 
     fun addParentShape(shape: Shape) {
-        parentShapes.add(shape)
+        owningShapes.add(shape)
     }
-
 
     fun removeImpossibleValue(value:Int) {
         if(isFound)
@@ -43,22 +42,10 @@ class Cell(val x:Int, val y:Int, initialValue:Int?) {
         if(_possibleValues.contains(value)) {
             _possibleValues.remove(value)
             if (_possibleValues.size == 1) {
-                println("Only 1 possible value left : ${_possibleValues[0]} is found for cell $x,$y")
-
-                setFoundValueWithNoPropagation(_possibleValues[0])
-                // ajoute dans la liste des items
-                parentSolver.eventCellWasFound(this)
-
+                // only 1 possible value left ! It has to be the value for this cell
+                foundValue = _possibleValues[0]
+                owningSolver.cellWasFound(this)
             }
-        }
-    }
-
-
-    // TODO, peut-être que ça pourrait être remonté dans le gameSolver...
-    fun notifyParentShapesValueWasFound() {
-        parentShapes.forEach { parentShape ->
-            val newValue = requireNotNull(foundValue)
-            parentShape.valueFound(this, newValue)
         }
     }
 
@@ -73,26 +60,15 @@ class Cell(val x:Int, val y:Int, initialValue:Int?) {
             } else {
                 _foundValue = value
                 _possibleValues.clear()
-                //notifyParentShapesValueWasFound()
             }
         }
 
-    fun setFoundValueWithNoPropagation(value:Int) {
-        if (isFound) {
-            throw IllegalMove("Impossible d'affecter une valeur déjà positionnée")
-        } else {
-            _foundValue = value
-            _possibleValues.clear()
-        }
-    }
 
     fun clone(): Cell {
         val clonedCell = Cell(x, y, foundValue)
         clonedCell._possibleValues = ArrayList(_possibleValues)
         return clonedCell
     }
-
-
 
     override fun toString(): String {
         return if (!isFound)
@@ -102,10 +78,3 @@ class Cell(val x:Int, val y:Int, initialValue:Int?) {
     }
 }
 
-interface CellListener {
-
-    fun valueFound(cell: Cell, newValue: Int)
-
-
-
-}

@@ -1,3 +1,4 @@
+import utils.println
 import java.util.LinkedList
 import java.util.Queue
 
@@ -27,10 +28,10 @@ class Game {
 
         val initialSolver = GameSolver(initialBoard)
 
-        initialSolver.firstPass()
+        initialSolver.eliminatePossibleValuesInOwningShapes()
 
         if(!initialSolver.board.isCompletelySolved()) {
-            initialSolver.secondPass()
+            initialSolver.eliminateUniqueValuesFromShapes()
         }
 
         if(!initialSolver.board.isCompletelySolved()) {
@@ -43,46 +44,34 @@ class Game {
         var maxIteration = 10
         var isSolved = false
 
-        try {
+        while(possibleAlterableBoards.isNotEmpty() && maxIteration > 0 && !isSolved) {
 
-            while(possibleAlterableBoards.isNotEmpty() && maxIteration > 0 && !isSolved) {
+            val alternativeBoard = possibleAlterableBoards.poll()
 
-                val alternativeBoard = possibleAlterableBoards.poll()
+            val firstCellWithFewPossibility = alternativeBoard.findFirstCellWithLessValuePossibilities()
 
-                println("Le plateau n'est toujours pas résolu")
-
-                val firstCellWithFewPossibility = alternativeBoard.findFirstCellWithLessValuePossibilities()
-                println("plusieurs alternatives sont possible")
-                println("cell ${firstCellWithFewPossibility.x},${firstCellWithFewPossibility.y} : ${firstCellWithFewPossibility.possibleValues}")
-
-                val alternativeValues = ArrayList(firstCellWithFewPossibility.possibleValues)
-                for (alternativeValue in alternativeValues) {
-                    try {
-                        val alternatedBoard = testAlternative(alternativeBoard, firstCellWithFewPossibility, alternativeValue)
-                        if(alternatedBoard.isCompletelySolved()) {
-                            // si le board est completé, alors, le jeu est fini.
-                            result = alternatedBoard
-                            isSolved = true
-                            break
-                        }
-
-                        // a la fin de la tentative de résolution alternative, il est possible que le tableau ne soit toujours pas résolu.
-                        // il faut donc tenter une nouvelle alternative sur le tableau restant.
-                        possibleAlterableBoards.add(alternatedBoard)
-
-                    } catch (error: Exception) {
-                        // IllegalMove or ImpossobleBoardState
-                        error.printStackTrace()
-                        println("Cette alternative n'est pas possible ... ")
-
+            val alternativeValues = ArrayList(firstCellWithFewPossibility.possibleValues)
+            for (alternativeValue in alternativeValues) {
+                try {
+                    val alternatedBoard = testAlternative(alternativeBoard, firstCellWithFewPossibility, alternativeValue)
+                    if(alternatedBoard.isCompletelySolved()) {
+                        // si le board est completé, alors, le jeu est fini.
+                        result = alternatedBoard
+                        isSolved = true
+                        break
                     }
-                }
 
-                maxIteration--
+                    // a la fin de la tentative de résolution alternative, il est possible que le tableau ne soit toujours pas résolu.
+                    // il faut donc tenter une nouvelle alternative sur le tableau restant.
+                    possibleAlterableBoards.add(alternatedBoard)
+
+                } catch (error: Exception) {
+                    // could be IllegalMove or ImpossibleBoardState
+                    println { "Cette alternative n'est pas possible ... ".red }
+                }
             }
-        } catch (e:Exception) {
-            e.printStackTrace()
-            println("DEBUGGING")
+
+            maxIteration--
         }
 
        return result
@@ -90,18 +79,17 @@ class Game {
     }
 
 
-    fun testAlternative(initialBoard: Board, cellAlternative: Cell, alternativeValue: Int ): Board {
+    private fun testAlternative(initialBoard: Board, cellAlternative: Cell, alternativeValue: Int ): Board {
         println("Testing alternative on Board")
-        initialBoard.debug()
         println("trying with alternative $alternativeValue for cell ${cellAlternative.x}, ${cellAlternative.y}")
 
         val alternativeSolver = GameSolver(initialBoard)
         val cellToAlternate = alternativeSolver.board[cellAlternative.x, cellAlternative.y]
         cellToAlternate.foundValue = alternativeValue
-        alternativeSolver.eventCellWasFound(cellToAlternate)
+        alternativeSolver.cellWasFound(cellToAlternate)
 
-        alternativeSolver.firstPass()
-        alternativeSolver.secondPass()
+        alternativeSolver.eliminatePossibleValuesInOwningShapes()
+        alternativeSolver.eliminateUniqueValuesFromShapes()
 
         return alternativeSolver.board
     }

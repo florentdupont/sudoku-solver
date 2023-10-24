@@ -1,47 +1,49 @@
-import utils.ColoredConsole
-import utils.println
+import exceptions.ImpossibleBoardState
 import java.util.*
 
 
-class GameSolver(boardToSolve: Board) : CellListener {
+class GameSolver(boardToSolve: Board) {
 
-    var nextCellsToNotifyParentsShapes:Queue<Cell> = LinkedList()
+    var nextCellsToNotifyOwningShapes:Queue<Cell> = LinkedList()
 
     var board: Board
 
     init {
         board = boardToSolve.clone()
-        board.cells.forEach { it.parentSolver = this }
+        board.cells.forEach { it.owningSolver = this }
 
         // Empile chaque cellule qui est déjà trouvée dans la file de traitement
         board.cells.forEach { cell ->
             if (cell.isFound) {
-                nextCellsToNotifyParentsShapes.add(cell)
+                nextCellsToNotifyOwningShapes.add(cell)
             }
         }
     }
 
 
     /**
-     * La 1ere passe itère sur toutes les cellules trouvée et les "reveille"
+     * La 1ere passe itère sur toutes les cellules trouvées et les "reveille"
      * pour qu'elles notifient à leur tour leur formes parentes...
-     * Les formes parentes vont réduire les valeurs possibles des leurs cases.
+     * Les formes parentes vont réduire les valeurs possibles de leurs cases.
      * Ce qui pourra avoir comme conséquences de réduire à 1 seule valeur possible sur une case
      * => et de faire en sorte qu'une seule valeur unique deviennent la valeur trouvée.
      * et a son tour déclenche les formes parentes pour qu'elles se mettent à jour.
      */
-    fun firstPass() {
+    fun eliminatePossibleValuesInOwningShapes() {
         // Dépile la liste de traitement des cellules trouvées
-        while (!nextCellsToNotifyParentsShapes.isEmpty()) {
-            val cell= nextCellsToNotifyParentsShapes.poll() // Récupère et supprime le premier élément
-            // force la cellule a notifier les shapes parents
-            cell.notifyParentShapesValueWasFound()
+        while (!nextCellsToNotifyOwningShapes.isEmpty()) {
+            val cell= nextCellsToNotifyOwningShapes.poll()
+
+            cell.owningShapes.forEach { owningShape ->
+                val foundValue = requireNotNull(cell.foundValue)
+                owningShape.removeFromPossibleValuesInShape(foundValue)
+            }
         }
     }
 
 
-    fun eventCellWasFound(cell: Cell) {
-        nextCellsToNotifyParentsShapes.add(cell)
+    fun cellWasFound(cell: Cell) {
+        nextCellsToNotifyOwningShapes.add(cell)
     }
 
     /**
@@ -49,8 +51,7 @@ class GameSolver(boardToSolve: Board) : CellListener {
      * S'il n'existe plus qu'une seule valeur possible pour une Shape, alors
      * il faudra affecter la case dessus.
      */
-    fun secondPass() {
-       // board.debug()
+    fun eliminateUniqueValuesFromShapes() {
         board.shapes().forEach { shape ->
             tryToFindUnicityInShape(shape)
 
@@ -58,26 +59,20 @@ class GameSolver(boardToSolve: Board) : CellListener {
             // Mais elles n'ont pas relancée de mise à jour des shapes parentes
             // On relance donc une firstPass pour qu'elles soient remises à jour.
             // avant de relancer une recherhe d'unicité sur une prochaine
-            firstPass()
+            eliminatePossibleValuesInOwningShapes()
         }
 
     }
 
-    private fun tryToFindUnicityInShape(shape: Shape):Int {
-        println("Try to find unicity in ${shape.type()} ${shape.name}")
-
-        var nbFoundCells = 0
+    private fun tryToFindUnicityInShape(shape: Shape) {
 
         // fait une analyse en 2 étapes :
         // 1ere etape :
         // prend toutes les valeurs possibles de chaque cell de la Shape
         // et place dans une map {ValeurPossible-> Nb de fois ou cette valeur est possible au sein de la Shape}
         // on obtient par exemple
-        //   1 : 2
-        //   2 : 1
-        //   4 : 3
-
-        val occurencesByRemainingValue = hashMapOf<Int,Int>()
+        //   [ 1->2, 2->1, 4->3]
+        val occurrencesByRemainingValue = hashMapOf<Int,Int>()
 
         // les boards alternatifs peuvent amener à des situations impossible.
         if(shape.cells.filter { !it.isFound }.size == 1) {
@@ -90,10 +85,10 @@ class GameSolver(boardToSolve: Board) : CellListener {
 
         shape.cells.filter { !it.isFound }.forEach{ cell ->
             cell.possibleValues.forEach { value ->
-                if(occurencesByRemainingValue.containsKey(value)) {
-                    occurencesByRemainingValue[value] = occurencesByRemainingValue[value]!! + 1
+                if(occurrencesByRemainingValue.containsKey(value)) {
+                    occurrencesByRemainingValue[value] = occurrencesByRemainingValue[value]!! + 1
                 } else {
-                    occurencesByRemainingValue[value] = 1
+                    occurrencesByRemainingValue[value] = 1
                 }
             }
         }
@@ -102,27 +97,13 @@ class GameSolver(boardToSolve: Board) : CellListener {
        // qui sont de la forme {x->1}
        // ces valeurs, si elles sont uniques, ne peuvent être positionnées qu'à 1 seul endroit.
        // il suffit donc de placer cette valeur sur la seule case de la cellule qui est possible.
-        occurencesByRemainingValue.entries.filter { it.value == 1 }.forEach { occ->
-            var foundCell = shape.cells.first { it.possibleValues.contains(occ.key) }
-            nbFoundCells++
+        occurrencesByRemainingValue.entries.filter { it.value == 1 }.forEach { occ->
+            val foundCell = shape.cells.first { it.possibleValues.contains(occ.key) }
             val foundValue = occ.key
-            foundCell.setFoundValueWithNoPropagation(foundValue)
-            eventCellWasFound(foundCell)
+            foundCell.foundValue = foundValue
+            cellWasFound(foundCell)
         }
-        return nbFoundCells
-    }
-
-
-
-    override fun valueFound(cell: Cell, newValue: Int) {
-
-        board.lastFoundCell = cell
 
     }
-
-
-
-
-
 
 }
