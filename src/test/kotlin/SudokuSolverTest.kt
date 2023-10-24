@@ -1,7 +1,7 @@
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 
-class RecursiveBoardTest {
+class SudokuSolverTest {
 
     @Test
     fun `already finished level should return the same board`() {
